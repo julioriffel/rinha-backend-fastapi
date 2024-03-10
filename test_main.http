@@ -1,0 +1,67 @@
+###
+# Test your FastAPI endpoints
+
+###
+GET {{server}}/clientes/1/extrato
+Accept: application/json
+
+> {%
+    client.test("Request executed successfully", function () {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+
+###
+GET {{server}}/clientes/2/extrato
+Accept: application/json
+
+> {%
+    client.test("Request executed successfully", function () {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+###
+GET {{server}}/clientes/6/extrato
+Accept: application/json
+
+> {%
+    client.test("Request executed successfully", function () {
+        client.assert(response.status === 404, "Response status is not 200");
+    });
+%}
+
+###
+POST {{server}}/clientes/1/transacoes
+Content-Type: application/json
+
+{
+  "tipo": "c",
+  "valor": {{$randomInt}},
+  "descricao": "xpto"
+}
+
+
+> {%
+    client.test("Request executed successfully", function () {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+###
+POST {{server}}/clientes/1/transacoes
+Content-Type: application/json
+
+{
+  "tipo": "d",
+  "valor": {{$random.integer(10000)}},
+  "descricao": "xpto"
+}
+
+
+> {%
+    client.test("Request executed successfully", function () {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
