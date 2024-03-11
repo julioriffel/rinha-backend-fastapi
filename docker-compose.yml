@@ -1,10 +1,9 @@
-version: '3.8'
+version: "3.8"
 
 services:
 
   db:
-    image: postgres:latest
-    restart: always
+    image: postgres:16
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -14,14 +13,25 @@ services:
     volumes:
       - ./script.sql:/docker-entrypoint-initdb.d/script.sql
     command: [ "-c", "shared_buffers=128MB", "-c", "synchronous_commit=off", "-c", "fsync=off", "-c", "full_page_writes=off" ]
-
+    restart: on-failure
+    deploy:
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: "185MB"
 
   redis:
     image: redis:latest
     hostname: redis
+    command: ["redis-server", "--save"]
     ports:
       - "6379:6379"
-
+    restart: on-failure
+    deploy:
+      resources:
+        limits:
+          cpus: "0.15"
+          memory: "35MB"
 
   api:
     expose:
@@ -32,11 +42,15 @@ services:
     #    image: julioriffel/rinha_backend_fastapi:latest
     build: .
     entrypoint: python -m gunicorn main:app --workers 2 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
-#    entrypoint: uvicorn main:app --proxy-headers --host 0.0.0.0 --port 8000
     depends_on:
       - redis
       - db
+    restart: on-failure
     deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: "150MB"
       replicas: 2
 
   nginx:
@@ -47,9 +61,14 @@ services:
       - api
     ports:
       - "9999:9999"
-
+    restart: on-failure
+    deploy:
+      resources:
+        limits:
+          cpus: "0.15"
+          memory: "30MB"
 
 networks:
   default:
     driver: bridge
-    name: julioriffel-fastapi
+    name: rinha-nginx-2024q1
