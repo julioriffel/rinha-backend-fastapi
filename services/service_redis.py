@@ -36,9 +36,8 @@ class ServiceClientRedis:
 
     @classmethod
     def get_client_balance(cls, id_client) -> int:
-        with redis_sync.lock(cls.redis_client_lock_key(id_client), timeout=0.2):
-            value = redis_sync.get(cls.redis_balance_key(id_client))
         try:
+            value = redis_sync.get(cls.redis_balance_key(id_client))
             return int(value)
         except TypeError:
             return 0
@@ -49,11 +48,12 @@ class ServiceClientRedis:
 
     @classmethod
     async def persist_transaction(cls, id_client: int, amount: int, transaction_type: str, limit: int):
-        with redis_sync.lock(cls.redis_client_lock_key(id_client), timeout=0.2):
-            if transaction_type == TransactionTypeEnum.DEBIT:
-                amount = amount * -1
-            new_balance = redis_sync.incrby(cls.redis_balance_key(id_client), amount)
-            if transaction_type == TransactionTypeEnum.DEBIT and new_balance + limit < 0:
-                redis_sync.incrby(cls.redis_balance_key(id_client), -amount)
+
+        if transaction_type == TransactionTypeEnum.DEBIT:
+            amount = amount * -1
+            balance = cls.get_client_balance(id_client)
+            if balance + amount + limit < 0:
                 raise LimitExceededException()
+        new_balance = redis_sync.incrby(cls.redis_balance_key(id_client), amount)
+
         return new_balance
